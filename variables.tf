@@ -1,10 +1,6 @@
 variable "project_services" {
   type = list(string)
-  default = [
-    "compute.googleapis.com",
-    "container.googleapis.com",
-    "artifactregistry.googleapis.com"
-  ]
+  default = null
 }
 
 variable "node_sa_roles" {
