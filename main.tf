@@ -1,13 +1,13 @@
 provider "google" {
-  project = "reactive-study-337414"
-  zone    = "us-east1-c"
-  region  = "us-east1"
+  project = var.project
+  zone    = var.zone
+  region  = var.region
 }
 
 provider "google-beta" {
-  project = "reactive-study-337414"
-  zone    = "us-east1-c"
-  region  = "us-east1"
+  project = var.project
+  zone    = var.zone
+  region  = var.region
 }
 
 resource "google_project_service" "services" {
@@ -17,7 +17,7 @@ resource "google_project_service" "services" {
 }
 
 resource "google_service_account" "node_sa" {
-  account_id   = "node-sa"
+  account_id   = var.cluster_sa_name
   display_name = "cluster service account"
   depends_on   = [google_project_service.services]
 }
@@ -26,43 +26,43 @@ resource "google_project_iam_member" "node_sa_roles" {
   count   = length(var.node_sa_roles)
   member  = format("serviceAccount:%s", google_service_account.node_sa.email)
   role    = element(var.node_sa_roles, count.index)
-  project = "reactive-study-337414"
+  project = var.project
 }
 
 resource "google_compute_network" "vpc_network" {
-  name                    = "reactive-study-vpc"
+  name                    = var.vpc_name
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "vpc_subnet" {
-  name          = "reactive-study-subnet"
-  region        = "us-east1"
+  name          = var.subnet_name
+  region        = var.region
   network       = google_compute_network.vpc_network.id
-  ip_cidr_range = "10.2.0.0/16"
+  ip_cidr_range = var.subnet_ip_cidr_range
 
   secondary_ip_range {
-    ip_cidr_range = "10.100.0.0/20"
-    range_name    = "services-ip-range"
+    ip_cidr_range = var.services_ip_cidr_range
+    range_name    = var.services_range_name
   }
 
   secondary_ip_range {
-    ip_cidr_range = "10.96.0.0/14"
-    range_name    = "pods-ip-range"
+    ip_cidr_range = var.pods_ip_cidr_range
+    range_name    = var.pods_range_name
   }
 }
 
 resource "google_container_cluster" "cluster" {
-  name                      = "reactive-study-cluster"
-  location                  = "us-east1"
+  name                      = var.cluster_name
+  location                  = var.region
   initial_node_count        = 1
   remove_default_node_pool  = true
   network                   = google_compute_network.vpc_network.id
   subnetwork                = google_compute_subnetwork.vpc_subnet.id
-  node_locations            = ["us-east1-c"]
+  node_locations            = [var.zone]
 
   ip_allocation_policy {
-    cluster_secondary_range_name  = "pods-ip-range"
-    services_secondary_range_name = "services-ip-range"
+    cluster_secondary_range_name  = var.pods_range_name
+    services_secondary_range_name = var.services_range_name
   }
 
   timeouts {
@@ -73,12 +73,12 @@ resource "google_container_cluster" "cluster" {
 }
 
 resource "google_container_node_pool" "cluster_node_pool" {
-  name        = "cluster-node-pool"
+  name        = var.node_pool_name
   cluster     = google_container_cluster.cluster.id
-  node_count  = 3
+  node_count  = var.node_count
 
   node_config {
-    machine_type    = "g1-small"
+    machine_type    = var.node_machine_type
     service_account = google_service_account.node_sa.email
 
     oauth_scopes    = [
@@ -93,10 +93,10 @@ resource "google_container_node_pool" "cluster_node_pool" {
   }
 }
 
-resource "google_artifact_registry_repository" "artifact_repo" {
+resource "google_artifact_registry_repository" "docker_repo" {
   format        = "DOCKER"
-  repository_id = "docker-images"
+  repository_id = var.docker_repo_name
   provider      = google-beta
-  location      = "us-east1"
+  location      = var.region
   depends_on    = [google_project_service.services]
 }
