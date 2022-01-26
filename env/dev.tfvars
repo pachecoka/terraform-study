@@ -1,4 +1,3 @@
-project = "reactive-study-339416"
 zone    = "us-east1-c"
 region  = "us-east1"
 

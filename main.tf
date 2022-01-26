@@ -1,3 +1,9 @@
+terraform {
+  backend "gcs" {
+    bucket = "terraform-bucket-kp"
+  }
+}
+
 provider "google" {
   project = var.project
   zone    = var.zone
