@@ -5,7 +5,8 @@ project_services = [
   "compute.googleapis.com",
   "container.googleapis.com",
   "artifactregistry.googleapis.com",
-  "servicenetworking.googleapis.com"
+  "servicenetworking.googleapis.com",
+  "cloudresourcemanager.googleapis.com"
 ]
 
 # service account
